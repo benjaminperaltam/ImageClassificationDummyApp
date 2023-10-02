@@ -1,0 +1,10 @@
+0 Passenger Side
+1 Passenger Back
+2 Back
+3 Driver Back
+4 Driver Side
+5 Driver Front
+6 Front
+7 Zoom in
+8 Zoom out
+9 Good

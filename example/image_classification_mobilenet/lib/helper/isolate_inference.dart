@@ -21,6 +21,8 @@ import 'package:image/image.dart' as image_lib;
 import 'package:image_classification_mobilenet/image_utils.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
 
+import 'qa_helper.dart';
+
 class IsolateInference {
   static const String _debugName = "TFLITE_INFERENCE";
   final ReceivePort _receivePort = ReceivePort();
@@ -45,71 +47,111 @@ class IsolateInference {
     sendPort.send(port.sendPort);
 
     await for (final InferenceModel isolateModel in port) {
-      image_lib.Image? img;
-      if (isolateModel.isCameraFrame()) {
-        img = ImageUtils.convertCameraImage(isolateModel.cameraImage!);
-      } else {
-        img = isolateModel.image;
-      }
+      image_lib.Image? img = getPreprocessedImage(isolateModel);
 
-      // resize original image to match model shape.
-      image_lib.Image imageInput = image_lib.copyResize(
-        img!,
-        width: isolateModel.inputShape[1],
-        height: isolateModel.inputShape[2],
-      );
+      // First (primary) inference
+      var classification1 = runInference(img, isolateModel, modelType: 'primary');
 
-      if (Platform.isAndroid && isolateModel.isCameraFrame()) {
-        imageInput = image_lib.copyRotate(imageInput, angle: 90);
-      }
+      // Second (binary) inference
+      var classification2 = runInference(img, isolateModel, modelType: 'binary');
 
-      final imageMatrix = List.generate(
-        imageInput.height,
-        (y) => List.generate(
-          imageInput.width,
-          (x) {
-            final pixel = imageInput.getPixel(x, y);
-            return [pixel.r, pixel.g, pixel.b];
-          },
-        ),
-      );
-
-      // Set tensor input [1, 224, 224, 3]
-      final input = [imageMatrix];
-      // Set tensor output [1, 1001]
-      final output = [List<int>.filled(isolateModel.outputShape[1], 0)];
-      // // Run inference
-      Interpreter interpreter =
-          Interpreter.fromAddress(isolateModel.interpreterAddress);
-      interpreter.run(input, output);
-      // Get first output tensor
-      final result = output.first;
-      int maxScore = result.reduce((a, b) => a + b);
-      // Set classification map {label: points}
-      var classification = <String, double>{};
-      for (var i = 0; i < result.length; i++) {
-        if (result[i] != 0) {
-          // Set label: points
-          classification[isolateModel.labels[i]] =
-              result[i].toDouble() / maxScore.toDouble();
-        }
-      }
-      isolateModel.responsePort.send(classification);
+      // Concatenate and send results (or do any other desired operations with them)
+      var concatenatedResults = {...classification1, ...classification2};
+      isolateModel.responsePort.send(concatenatedResults);
     }
   }
+
+  static image_lib.Image? getPreprocessedImage(InferenceModel isolateModel) {
+    if (isolateModel.isCameraFrame()) {
+      return ImageUtils.convertCameraImage(isolateModel.cameraImage!);
+    } else {
+      return isolateModel.image;
+    }
+  }
+
+  static Map<String, double> runInference(image_lib.Image? img, InferenceModel model, {required String modelType}) {
+    // resize original image to match model shape.
+    image_lib.Image imageInput = image_lib.copyResize(
+      img!,
+      width: model.inputShape[1],
+      height: model.inputShape[2],
+    );
+
+    if (Platform.isAndroid && model.isCameraFrame()) {
+      imageInput = image_lib.copyRotate(imageInput, angle: 0);
+    }
+
+    final imageMatrix = List.generate(
+      imageInput.height,
+          (y) =>
+          List.generate(
+            imageInput.width,
+                (x) {
+              final pixel = imageInput.getPixel(x, y);
+              return [
+                pixel.r.toDouble(),
+                pixel.g.toDouble(),
+                pixel.b.toDouble()
+              ];
+            },
+          ),
+    );
+
+    // Set tensor input [1, 224, 224, 3]
+    final outputShape = (modelType == 'binary') ? model.binaryOutputShape : model.outputShape;
+    final interpreterAddress = (modelType == 'binary') ? model.binaryInterpreterAddress : model.interpreterAddress;
+
+    final input = [imageMatrix];
+    final output = (modelType == 'binary') ? [List<int>.filled(outputShape[1], 0)] : [List<double>.filled(outputShape[1], 0)];
+
+    Interpreter interpreter = Interpreter.fromAddress(interpreterAddress);
+    interpreter.run(input, output);
+
+    var outValue = 0.0;
+    var outName = "";
+    if (modelType == 'binary'){
+      outName = 'IsCar';
+      outValue = output.first.last.toDouble();
+    }else{
+      outName = 'Good';
+      List<double> doubleList = output.first.map((i) => i.toDouble()).toList();
+      outValue = QAHelper.combinedPostProcessing([doubleList]).first.last.toDouble();
+    }
+    return <String, double>{outName: output.first.last.toDouble()};
+    // ... rest of your processing logic, return results as needed.
+    //var classification = <String, double>{};
+    //if(modelType == 'binary'){
+    //  classification['isCar'] = output.first.last.toDouble();
+    //}else {
+    // var result = output.first;
+      //final postprocess = QAHelper.combinedPostProcessing([result]);
+    // classification['Good'] = output.first.last.toDouble();
+    }
 }
 
 class InferenceModel {
   CameraImage? cameraImage;
   image_lib.Image? image;
   int interpreterAddress;
+  int binaryInterpreterAddress;
   List<String> labels;
   List<int> inputShape;
+  List<int> binaryInputShape;
   List<int> outputShape;
+  List<int> binaryOutputShape;
   late SendPort responsePort;
 
-  InferenceModel(this.cameraImage, this.image, this.interpreterAddress,
-      this.labels, this.inputShape, this.outputShape);
+  InferenceModel(
+  this.cameraImage,
+  this.image,
+  this.interpreterAddress,
+  this.binaryInterpreterAddress,
+  this.labels,
+  this.inputShape,
+  this.binaryInputShape,
+  this.outputShape,
+  this.binaryOutputShape
+  );
 
   // check if it is camera frame or still image
   bool isCameraFrame() {
