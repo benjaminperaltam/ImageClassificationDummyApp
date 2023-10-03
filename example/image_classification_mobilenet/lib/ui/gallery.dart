@@ -37,7 +37,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
 
   @override
   void initState() {
-    imageClassificationHelper = ImageClassificationHelper();
+    imageClassificationHelper = ImageClassificationHelper(modelPath: "assets/models/61-large_nearest_w_pre_fl16.tflite");
     imageClassificationHelper!.initHelper();
     super.initState();
   }

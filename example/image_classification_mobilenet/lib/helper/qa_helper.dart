@@ -40,17 +40,35 @@ class QAHelper {
       // maximum probability. The closer an image is to the correct angle the
       // higher is its valid range (Ex. class 0 is Passenger Side and class 6 is
       // Front and their valid values are between 0.55 and 0.65)
-      final classRanges = {
-        0: [0.75, 0.8],
-        1: [0.5, 0.55],
-        2: [0.2, 0.25],
-        3: [0.45, 0.5],
-        4: [0.55, 0.6],
-        5: [0.7, 0.75],
-        6: [0.7, 0.75],
-        7: [0.3, 0.4],  // NEW: it represents the PART OF THE CAR/ZOOM IN problem
-        8: [0.3, 0.4] // NEW: it represents the ZOOM OUT PASS FRONT car problem
-      };
+      Map<int, List<double>> classRanges = {};
+
+      if (inputs.first.length == 11) {
+        classRanges = {
+          0: [0.75, 0.8], // Pass side
+          1: [0.5, 0.55], // Pass back
+          2: [0.2, 0.25], // Back
+          3: [0.45, 0.5], // Driver back
+          4: [0.55, 0.6], // Driver side
+          5: [0.7, 0.75], // Driver Front
+          6: [0.75, 0.8], // Front
+          7: [0.3, 0.4], // ZOOM in
+          8: [0.3, 0.4], // ZOOM out
+          9: [0.7, 0.75] // Fit
+        };
+
+      }else if(inputs.first.length == 10){
+        classRanges = {
+          0: [0.75, 0.8], // Pass side
+          1: [0.5, 0.55], // Pass back
+          2: [0.2, 0.25], // Back
+          3: [0.45, 0.5], // Driver back
+          4: [0.55, 0.6], // Driver side
+          5: [0.7, 0.75], // Driver Front
+          6: [0.75, 0.8], // Front
+          7: [0.3, 0.4], // ZOOM in
+          8: [0.3, 0.4], // ZOOM out
+        };
+      }
 
       // Empty list to store the output values
       final outputs = List.generate(

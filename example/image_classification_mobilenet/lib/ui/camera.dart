@@ -20,14 +20,27 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:image_classification_mobilenet/helper/image_classification_helper.dart';
 
+class ModelInfo {
+  final String name;
+  final String path;
+
+  ModelInfo(this.name, this.path);
+}
+
 double? goodAvg;
 double? isCarAvg;
+List<ModelInfo> models = [
+  ModelInfo('Model 61', 'assets/models/61-large_nearest_w_pre_fl16.tflite'),
+  ModelInfo('Model 81', 'assets/models/81-large_nearest_w_pre_11class(datasetV7)_fl16.tflite'),
+  // ... Add more models as required
+];
+var selectedModel =  models[0];
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({
-    super.key,
+    Key? key,
     required this.camera,
-  });
+  }) : super(key: key);
 
   final CameraDescription camera;
 
@@ -104,7 +117,7 @@ class CameraScreenState extends State<CameraScreen>
     });
     WidgetsBinding.instance.addObserver(this);
     initCamera();
-    imageClassificationHelper = ImageClassificationHelper();
+    imageClassificationHelper = ImageClassificationHelper(modelPath: selectedModel.path);
     imageClassificationHelper.initHelper();
     super.initState();
   }
@@ -196,10 +209,127 @@ class CameraScreenState extends State<CameraScreen>
         ),
       ),
     ));
+    list.add(
+        Positioned(  // Using Positioned to place the dropdown at the top
+          top: 20,   // Adjust as needed
+          left: 20,  // Adjust as needed
+          child: ModelSelector(
+            models: models,
+            onModelSelected: (model) {
+              setState(() {
+                selectedModel = model;
+                imageClassificationHelper = ImageClassificationHelper(modelPath: selectedModel.path);
+                imageClassificationHelper.initHelper();
+              });
+              print('Selected Model Path: ${model.path}');
+            },
+          ),
+        )
+    );
 
     return SafeArea(
       child: Stack(
         children: list,
+      ),
+    );
+  }
+}
+
+class ModelSelectorController {
+  ModelInfo? selectedModel;
+
+  void changeModel(ModelInfo model) {
+    selectedModel = model;
+  }
+}
+
+class ModelSelector extends StatefulWidget {
+  final List<ModelInfo> models;
+  final ValueChanged<ModelInfo> onModelSelected;
+  final ModelSelectorController? controller;
+
+  const ModelSelector({
+    Key? key,
+    required this.models,
+    required this.onModelSelected,
+    this.controller,
+  }) : super(key: key);
+
+  @override
+  ModelSelectorState createState() => ModelSelectorState();
+}
+
+class ModelSelectorState extends State<ModelSelector> {
+  ModelInfo? selectedModel;
+
+  @override
+  void initState() {
+    super.initState();
+    selectedModel = widget.models.isNotEmpty ? widget.models[0] : null;
+
+    // Check if controller is provided and set the initial value
+    if (widget.controller != null && selectedModel != null) {
+      widget.controller!.changeModel(selectedModel!);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DropdownButton<ModelInfo>(
+      value: selectedModel,
+      onChanged: (ModelInfo? newValue) {
+        if (newValue != null) {
+          setState(() {
+            selectedModel = newValue;
+          });
+          if (widget.controller != null) {
+            widget.controller!.changeModel(newValue);
+          }
+          widget.onModelSelected(newValue);
+        }
+      },
+      items: widget.models.map<DropdownMenuItem<ModelInfo>>((ModelInfo value) {
+        return DropdownMenuItem<ModelInfo>(
+          value: value,
+          child: Text(value.name),
+        );
+      }).toList(),
+    );
+  }
+}
+
+class ParentWidget extends StatefulWidget {
+  const ParentWidget({Key? key}) : super(key: key);
+  @override
+  ParentWidgetState createState() => ParentWidgetState();
+}
+
+
+class ParentWidgetState extends State<ParentWidget> {
+  final controller = ModelSelectorController();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Model Selector Example')),
+      body: Column(
+        children: [
+          ModelSelector(
+            models: models,
+            onModelSelected: (model) {
+              // This is called whenever a new model is selected
+              print('Selected Model Path: ${model.path}');
+            },
+            controller: controller,
+          ),
+          ElevatedButton(
+            onPressed: () {
+              // Access the selected model from the controller
+              print('Currently selected model: ${controller.selectedModel?.name}');
+            },
+            child: const Text('Check Selected Model'),
+          ),
+        ],
       ),
     );
   }

@@ -109,7 +109,7 @@ class IsolateInference {
     // Set tensor input [1, 224, 224, 3]
     final outputShape = (modelType == 'binary') ? model.binaryOutputShape : model.outputShape;
     final interpreterAddress = (modelType == 'binary') ? model.binaryInterpreterAddress : model.interpreterAddress;
-
+    print('Output Shape $outputShape');
     final input = [imageMatrix];
     final output = (modelType == 'binary') ? [List<int>.filled(outputShape[1], 0)] : [List<double>.filled(outputShape[1], 0)];
 

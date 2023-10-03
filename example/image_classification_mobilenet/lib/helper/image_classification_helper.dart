@@ -25,9 +25,11 @@ import 'package:tflite_flutter/tflite_flutter.dart';
 import 'isolate_inference.dart';
 
 class ImageClassificationHelper {
-  static const modelPath = 'assets/models/61-large_nearest_w_pre_fl16.tflite';
+  final String modelPath;
   static const binaryModelPath = 'assets/models/59-binary_large_w_pre_fl16.tflite';
   static const labelsPath = 'assets/models/custom_labels.txt';
+
+  ImageClassificationHelper({required this.modelPath});
 
   late final Interpreter interpreter;
   late final Interpreter binaryInterpreter;
