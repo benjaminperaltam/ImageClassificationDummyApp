@@ -158,7 +158,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
                                   (a, b) => a.value.compareTo(b.value),
                                 ))
                               .reversed
-                              .take(3)
+                              .take(6)
                               .map(
                                 (e) => Container(
                                   padding: const EdgeInsets.all(8),

@@ -15,7 +15,6 @@
  */
 
 import 'dart:developer';
-import 'dart:io';
 import 'dart:isolate';
 
 import 'package:camera/camera.dart';
@@ -115,7 +114,8 @@ class ImageClassificationHelper {
         inputTensor.shape,
         binaryInputTensor.shape,
         outputTensor.shape,
-        binaryOutputTensor.shape
+        binaryOutputTensor.shape,
+        <String, double>{}
     );
 
     var primaryResults = await _inference(isolateModel);
@@ -137,7 +137,8 @@ class ImageClassificationHelper {
         inputTensor.shape,
         binaryInputTensor.shape,
         outputTensor.shape,
-        binaryOutputTensor.shape
+        binaryOutputTensor.shape,
+        <String, double>{}
     );
 
     var primaryResults = await _inference(isolateModel);

@@ -51,12 +51,19 @@ class IsolateInference {
 
       // First (primary) inference
       var classification1 = runInference(img, isolateModel, modelType: 'primary');
+      var primaryTimes = isolateModel.inferenceTimes;
 
       // Second (binary) inference
       var classification2 = runInference(img, isolateModel, modelType: 'binary');
+      var binaryTimes = isolateModel.inferenceTimes;
 
       // Concatenate and send results (or do any other desired operations with them)
-      var concatenatedResults = {...classification1, ...classification2};
+      var concatenatedResults = {
+        ...classification1,
+        ...classification2,
+        ...primaryTimes,
+        ...binaryTimes
+      };
       isolateModel.responsePort.send(concatenatedResults);
     }
   }
@@ -71,6 +78,7 @@ class IsolateInference {
 
   static Map<String, double> runInference(image_lib.Image? img, InferenceModel model, {required String modelType}) {
     // resize original image to match model shape.
+    final stopwatch = Stopwatch()..start(); // Start measuring time
     image_lib.Image imageInput = image_lib.copyResize(
       img!,
       width: model.inputShape[1],
@@ -96,7 +104,8 @@ class IsolateInference {
             },
           ),
     );
-
+    model.inferenceTimes['Preprocessing $modelType model'] = (stopwatch.elapsedMilliseconds.toDouble());
+    stopwatch.reset();
     // Set tensor input [1, 224, 224, 3]
     final outputShape = (modelType == 'binary') ? model.binaryOutputShape : model.outputShape;
     final interpreterAddress = (modelType == 'binary') ? model.binaryInterpreterAddress : model.interpreterAddress;
@@ -104,8 +113,13 @@ class IsolateInference {
     final input = [imageMatrix];
     final output = (modelType == 'binary') ? [List<int>.filled(outputShape[1], 0)] : [List<double>.filled(outputShape[1], 0)];
 
+    stopwatch.reset();
+
     Interpreter interpreter = Interpreter.fromAddress(interpreterAddress);
     interpreter.run(input, output);
+
+    model.inferenceTimes['Inference $modelType model'] = (stopwatch.elapsedMilliseconds.toDouble());
+    stopwatch.reset();
 
     var outValue = 0.0;
     var outName = "";
@@ -117,7 +131,7 @@ class IsolateInference {
       List<double> doubleList = output.first.map((i) => i.toDouble()).toList();
       outValue = QAHelper.combinedPostProcessing([doubleList]).first.last.toDouble();
     }
-    return <String, double>{outName: output.first.last.toDouble()};
+    return <String, double>{outName: outValue};
     // ... rest of your processing logic, return results as needed.
     //var classification = <String, double>{};
     //if(modelType == 'binary'){
@@ -139,18 +153,20 @@ class InferenceModel {
   List<int> binaryInputShape;
   List<int> outputShape;
   List<int> binaryOutputShape;
+  Map<String, double> inferenceTimes;
   late SendPort responsePort;
 
   InferenceModel(
-  this.cameraImage,
-  this.image,
-  this.interpreterAddress,
-  this.binaryInterpreterAddress,
-  this.labels,
-  this.inputShape,
-  this.binaryInputShape,
-  this.outputShape,
-  this.binaryOutputShape
+      this.cameraImage,
+      this.image,
+      this.interpreterAddress,
+      this.binaryInterpreterAddress,
+      this.labels,
+      this.inputShape,
+      this.binaryInputShape,
+      this.outputShape,
+      this.binaryOutputShape,
+      this.inferenceTimes
   );
 
   // check if it is camera frame or still image

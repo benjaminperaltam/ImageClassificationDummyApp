@@ -15,9 +15,13 @@
  */
 
 import 'dart:io';
+import 'dart:async';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:image_classification_mobilenet/helper/image_classification_helper.dart';
+
+double? goodAvg;
+double? isCarAvg;
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({
@@ -37,6 +41,8 @@ class CameraScreenState extends State<CameraScreen>
   late ImageClassificationHelper imageClassificationHelper;
   Map<String, double>? classification;
   bool _isProcessing = false;
+  List<double> primaryPredictions = [];
+  List<double> binaryPredictions = [];
 
   // init camera
   initCamera() {
@@ -60,14 +66,42 @@ class CameraScreenState extends State<CameraScreen>
     _isProcessing = true;
     classification =
         await imageClassificationHelper.inferenceCameraFrame(cameraImage);
+    var primaryPrediction = classification?["Good"] ?? 0.0;
+    primaryPredictions.add(primaryPrediction);
+
+    var binaryPrediction = classification?["IsCar"] ?? 0.0;
+    binaryPredictions.add(binaryPrediction);
+
+    // This is where we ensure the averages are always present in the classification
+    if (goodAvg != null) {
+      classification?['GoodAvg'] = goodAvg!;
+    }
+    if (isCarAvg != null) {
+      classification?['IsCarAvg'] = isCarAvg!;
+    }
+
     _isProcessing = false;
     if (mounted) {
       setState(() {});
     }
   }
 
+  Timer? periodicTimer;
+
   @override
   void initState() {
+    super.initState();
+
+    periodicTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
+      if (primaryPredictions.isNotEmpty) {
+        goodAvg = primaryPredictions.reduce((a, b) => a + b) / primaryPredictions.length;
+        isCarAvg = binaryPredictions.reduce((a, b) => a + b) / binaryPredictions.length;
+
+        primaryPredictions = [];
+        binaryPredictions = [];
+        setState(() {});
+      }
+    });
     WidgetsBinding.instance.addObserver(this);
     initCamera();
     imageClassificationHelper = ImageClassificationHelper();
@@ -92,6 +126,7 @@ class CameraScreenState extends State<CameraScreen>
 
   @override
   void dispose() {
+    periodicTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     cameraController.dispose();
     imageClassificationHelper.close();
@@ -143,11 +178,11 @@ class CameraScreenState extends State<CameraScreen>
                       (a, b) => a.value.compareTo(b.value),
                     ))
                   .reversed
-                  .take(3)
+                  .take(8)
                   .map(
                     (e) => Container(
                       padding: const EdgeInsets.all(8),
-                      color: Colors.white,
+                      color: Colors.white.withOpacity(0.8),
                       child: Row(
                         children: [
                           Text(e.key),
