@@ -89,6 +89,23 @@ class _BottomNavigationBarExampleState
       appBar: AppBar(
         title: Image.asset('assets/images/tfl_logo.png'),
         backgroundColor: Colors.black.withOpacity(0.5),
+        actions: [
+          DropdownButton<ModelInfo>(
+            value: selectedModel,
+            items: models.map((model) {
+              return DropdownMenuItem<ModelInfo>(
+                value: model,
+                child: Text(model.name),
+              );
+            }).toList(),
+            onChanged: (newValue) {
+              setState(() {
+                selectedModel = newValue!;
+              });
+            },
+            hint: const Text('Select a Model'),
+          ),
+        ],
       ),
       body: Center(
         child: _widgetOptions?.elementAt(_selectedIndex),
@@ -110,4 +127,19 @@ class _BottomNavigationBarExampleState
       ),
     );
   }
+}
+
+List<ModelInfo> models = [
+  ModelInfo('Model 61', 'assets/models/61-large_nearest_w_pre_fl16.tflite'),
+  ModelInfo('Model 81', 'assets/models/61-large_nearest_w_pre_fl16.tflite'),
+  // ... Add more models as required
+];
+
+ModelInfo? selectedModel;
+
+class ModelInfo {
+  final String name;
+  final String path;
+
+  ModelInfo(this.name, this.path);
 }
