@@ -32,6 +32,7 @@ double? isCarAvg;
 List<ModelInfo> models = [
   ModelInfo('Model 61', 'assets/models/61-large_nearest_w_pre_fl16.tflite'),
   ModelInfo('Model 81', 'assets/models/81-large_nearest_w_pre_11class(datasetV7)_fl16.tflite'),
+  ModelInfo('Model 83', 'assets/models/83-large_nearest_w_pre_square_pad_11class(datasetV7)_fl16.tflite')
   // ... Add more models as required
 ];
 var selectedModel =  models[0];
@@ -221,7 +222,6 @@ class CameraScreenState extends State<CameraScreen>
                 imageClassificationHelper = ImageClassificationHelper(modelPath: selectedModel.path);
                 imageClassificationHelper.initHelper();
               });
-              print('Selected Model Path: ${model.path}');
             },
           ),
         )
@@ -318,14 +318,12 @@ class ParentWidgetState extends State<ParentWidget> {
             models: models,
             onModelSelected: (model) {
               // This is called whenever a new model is selected
-              print('Selected Model Path: ${model.path}');
             },
             controller: controller,
           ),
           ElevatedButton(
             onPressed: () {
               // Access the selected model from the controller
-              print('Currently selected model: ${controller.selectedModel?.name}');
             },
             child: const Text('Check Selected Model'),
           ),

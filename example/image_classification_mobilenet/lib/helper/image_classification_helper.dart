@@ -117,7 +117,8 @@ class ImageClassificationHelper {
         binaryInputTensor.shape,
         outputTensor.shape,
         binaryOutputTensor.shape,
-        <String, double>{}
+        <String, double>{},
+        modelPath
     );
 
     var primaryResults = await _inference(isolateModel);
@@ -140,7 +141,9 @@ class ImageClassificationHelper {
         binaryInputTensor.shape,
         outputTensor.shape,
         binaryOutputTensor.shape,
-        <String, double>{}
+        <String, double>{},
+        modelPath
+
     );
 
     var primaryResults = await _inference(isolateModel);

@@ -18,6 +18,7 @@ import 'dart:io';
 import 'dart:isolate';
 import 'package:camera/camera.dart';
 import 'package:image/image.dart' as image_lib;
+import 'package:image_classification_mobilenet/helper/padding_preprocess.dart';
 import 'package:image_classification_mobilenet/image_utils.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
 
@@ -47,10 +48,12 @@ class IsolateInference {
     sendPort.send(port.sendPort);
 
     await for (final InferenceModel isolateModel in port) {
+      bool squarePadding = isolateModel.modelPath == 'assets/models/83-large_nearest_w_pre_square_pad_11class(datasetV7)_fl16.tflite';
       image_lib.Image? img = getPreprocessedImage(isolateModel);
+      image_lib.Image? squarePaddingImg = applyPoolingWithPadding(img);
 
       // First (primary) inference
-      var classification1 = runInference(img, isolateModel, modelType: 'primary');
+      var classification1 = runInference(squarePadding ? squarePaddingImg : img, isolateModel, modelType: 'primary');
       var primaryTimes = isolateModel.inferenceTimes;
 
       // Second (binary) inference
@@ -109,7 +112,6 @@ class IsolateInference {
     // Set tensor input [1, 224, 224, 3]
     final outputShape = (modelType == 'binary') ? model.binaryOutputShape : model.outputShape;
     final interpreterAddress = (modelType == 'binary') ? model.binaryInterpreterAddress : model.interpreterAddress;
-    print('Output Shape $outputShape');
     final input = [imageMatrix];
     final output = (modelType == 'binary') ? [List<int>.filled(outputShape[1], 0)] : [List<double>.filled(outputShape[1], 0)];
 
@@ -132,14 +134,6 @@ class IsolateInference {
       outValue = QAHelper.combinedPostProcessing([doubleList]).first.last.toDouble();
     }
     return <String, double>{outName: outValue};
-    // ... rest of your processing logic, return results as needed.
-    //var classification = <String, double>{};
-    //if(modelType == 'binary'){
-    //  classification['isCar'] = output.first.last.toDouble();
-    //}else {
-    // var result = output.first;
-      //final postprocess = QAHelper.combinedPostProcessing([result]);
-    // classification['Good'] = output.first.last.toDouble();
     }
 }
 
@@ -154,6 +148,7 @@ class InferenceModel {
   List<int> outputShape;
   List<int> binaryOutputShape;
   Map<String, double> inferenceTimes;
+  String modelPath;
   late SendPort responsePort;
 
   InferenceModel(
@@ -166,7 +161,8 @@ class InferenceModel {
       this.binaryInputShape,
       this.outputShape,
       this.binaryOutputShape,
-      this.inferenceTimes
+      this.inferenceTimes,
+      this.modelPath
   );
 
   // check if it is camera frame or still image
