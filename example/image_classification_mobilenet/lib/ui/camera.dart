@@ -32,7 +32,8 @@ double? isCarAvg;
 List<ModelInfo> models = [
   ModelInfo('Model 61', 'assets/models/61-large_nearest_w_pre_fl16.tflite'),
   ModelInfo('Model 81', 'assets/models/81-large_nearest_w_pre_11class(datasetV7)_fl16.tflite'),
-  ModelInfo('Model 83', 'assets/models/83-large_nearest_w_pre_square_pad_11class(datasetV7)_fl16.tflite')
+  ModelInfo('Model 83', 'assets/models/83-large_nearest_w_pre_square_pad_11class(datasetV7)_fl16.tflite'),
+  ModelInfo('Model 91', 'assets/models/91-large_nearest_w_pre_11class(datasetV10)_fl16.tflite')
   // ... Add more models as required
 ];
 var selectedModel =  models[0];

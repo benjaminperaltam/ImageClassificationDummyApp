@@ -93,10 +93,14 @@ class QAHelper {
               math.Random().nextDouble() * (-0.05 - 0.05) +
               0.05;
           // Fix min and max values for the 7-th class depending on its new value
-          if (inputs[i][goodIndex] > 0.3) {
-            outputs[i] = computeValues(jitter.clamp(0.9, 1.0));
+          if (inputs[i][goodIndex] > 0.8) {
+            outputs[i] = computeValues(jitter.clamp(0.99, 1.0));
+          } else if (inputs[i][goodIndex] > 0.6 && inputs[i][goodIndex] <= 0.8) {
+            outputs[i] = computeValues(jitter.clamp(0.95, 0.99));
+          } else if (inputs[i][goodIndex] > 0.4 && inputs[i][goodIndex] <= 0.6){
+            outputs[i] = computeValues(jitter.clamp(0.9, 0.95));
           } else {
-            outputs[i] = computeValues(jitter.clamp(0.75, 0.9));
+            outputs[i] = computeValues(jitter.clamp(0.8, 0.9));
           }
         }
       }
