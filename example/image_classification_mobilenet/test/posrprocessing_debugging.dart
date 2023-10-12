@@ -20,7 +20,7 @@ List<double> postProcess(List<double> yPred, Map<List<double>, List<double>> max
     if (yPred[i] < pMin) yPred[i] = 0;
   }
 
-  final dp = (1 - yPred.reduce((curr, next) => curr > next ? curr : next)) / yPred.length;
+  final dp = (1 - yPred.reduce((curr, next) => curr + next)) / yPred.length;
   for (int i = 0; i < yPred.length; i++) {
     yPred[i] += dp;
   }
@@ -38,10 +38,10 @@ List<double> postProcess(List<double> yPred, Map<List<double>, List<double>> max
       postY[yClass] = newMax;
 
       final remainingP = 1 - newMax;
-      final pDist = List.from(yPred)
+      List<double> pDist = List.from(yPred)
         ..removeAt(yClass);
 
-      final total = pDist.reduce((a, b) => a + b) - newMax;
+      final total = pDist.reduce((a, b) => a + b);
 
       if (total == 0) {
         for (int i = 0; i < yClass; i++) {
@@ -65,7 +65,7 @@ List<double> postProcess(List<double> yPred, Map<List<double>, List<double>> max
 }
 
 void main() {
-  List<double> predefinedList = [0.1, 0.1, 0, 0, 0.2, 0, 0, 0.5, 0, 0.1];
-  List<double> result = postProcess(predefinedList, maxUpscaleRanges);
+  List<double> sampleList = [0.1, 0.1, 0, 0, 0.2, 0, 0, 0.5, 0, 0.1];
+  List<double> result = postProcess(sampleList, maxUpscaleRanges);
   print(result);
 }
