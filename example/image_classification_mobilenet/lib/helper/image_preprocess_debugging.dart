@@ -2,10 +2,7 @@ import 'dart:io';
 import 'package:image/image.dart';
 import 'padding_preprocess.dart';
 
-// This is a placeholder for the preprocessing function.
-// You'd replace this with your actual image processing logic.
 Image? imagePreprocessing(Image img) {
-  // For demonstration purposes, let's say the preprocessing just inverts the colors
   return applyPoolingWithPadding(img);
 }
 
